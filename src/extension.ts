@@ -17,28 +17,30 @@ const vagrantPath = path.join(
 const identityFile =
   "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
-let sshProcess: ChildProcessWithoutNullStreams | null = null;
+let terminal: vscode.Terminal | null = null;
 
-// create persistent SSH session
-function createPersistentSSH(
-  identityFile: string
-): ChildProcessWithoutNullStreams {
-  return spawn("ssh", [
-    "-t",
-    "-i",
-    identityFile,
-    "-p",
-    "2222",
-    "vagrant@127.0.0.1",
-  ]);
+function createTerminal() {
+  if (terminal) {
+    // 如果已经存在终端，则重新使用
+    terminal.show();
+    return;
+  }
+
+  // 创建新的 VSCode 终端
+  terminal = vscode.window.createTerminal({
+    name: "Vagrant SSH",
+    shellPath: "ssh",
+    shellArgs: ["-i", identityFile, "-p", "2222", "vagrant@127.0.0.1"],
+  });
+
+  terminal.show();
 }
 
-// send commend to ssh session
-function sendCommandToSSH(command: string) {
-  if (sshProcess) {
-    sshProcess.stdin.write(`${command}\n`);
+function sendCommandToTerminal(command: string) {
+  if (terminal) {
+    terminal.sendText(command);
   } else {
-    vscode.window.showErrorMessage("SSH connection is not established.");
+    vscode.window.showErrorMessage("Terminal is not open.");
   }
 }
 
@@ -126,35 +128,11 @@ export function activate(context: vscode.ExtensionContext) {
   const connectCommand = vscode.commands.registerCommand(
     "extension.persistentVagrantSsh",
     () => {
-      // create persistent ssh connection
-      sshProcess = createPersistentSSH(identityFile);
-
-      const outputChannel = vscode.window.createOutputChannel("Vagrant SSH");
-
-      // capture SSH output and show in VSCode output window
-      sshProcess.stdout.on("data", (data) => {
-        outputChannel.show(true);
-        outputChannel.append(data.toString());
-      });
-
-      // capture error information
-      sshProcess.stderr.on("data", (data) => {
-        vscode.window.showErrorMessage(`SSH Error: ${data.toString()}`);
-      });
-
-      // when close SSH session
-      sshProcess.on("close", (code) => {
-        vscode.window.showInformationMessage(
-          `SSH session closed with code ${code}`
-        );
-        sshProcess = null; // 清空 SSH 进程状态
-      });
-
-      // send first command after connection
+      createTerminal();
       vscode.window.showInformationMessage("SSH connection established.");
-      sendCommandToSSH("ls");
-      sendCommandToSSH("cd tests");
-      sendCommandToSSH("ls");
+      sendCommandToTerminal("ls");
+      sendCommandToTerminal("cd tests");
+      sendCommandToTerminal("ls");
     }
   );
 
