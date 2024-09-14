@@ -20,6 +20,10 @@
       {
         "command": "extension.runVagrant",
         "title": "Run vagrant"
+      },
+      {
+        "command": "extension.persistentVagrantSsh",
+        "title": "Run vagrant persistently"
       }
     ]
   },

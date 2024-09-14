@@ -3,6 +3,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as path from "path";
+import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 
 const filePath = path.join(__dirname, "..", "src", "test.sh");
 const vagrantPath = path.join(
@@ -15,6 +16,31 @@ const vagrantPath = path.join(
 );
 const identityFile =
   "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+
+let sshProcess: ChildProcessWithoutNullStreams | null = null;
+
+// create persistent SSH session
+function createPersistentSSH(
+  identityFile: string
+): ChildProcessWithoutNullStreams {
+  return spawn("ssh", [
+    "-t",
+    "-i",
+    identityFile,
+    "-p",
+    "2222",
+    "vagrant@127.0.0.1",
+  ]);
+}
+
+// send commend to ssh session
+function sendCommandToSSH(command: string) {
+  if (sshProcess) {
+    sshProcess.stdin.write(`${command}\n`);
+  } else {
+    vscode.window.showErrorMessage("SSH connection is not established.");
+  }
+}
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -96,8 +122,45 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
+  // command for persistentVagrantSsh
+  const connectCommand = vscode.commands.registerCommand(
+    "extension.persistentVagrantSsh",
+    () => {
+      // create persistent ssh connection
+      sshProcess = createPersistentSSH(identityFile);
+
+      const outputChannel = vscode.window.createOutputChannel("Vagrant SSH");
+
+      // capture SSH output and show in VSCode output window
+      sshProcess.stdout.on("data", (data) => {
+        outputChannel.show(true);
+        outputChannel.append(data.toString());
+      });
+
+      // capture error information
+      sshProcess.stderr.on("data", (data) => {
+        vscode.window.showErrorMessage(`SSH Error: ${data.toString()}`);
+      });
+
+      // when close SSH session
+      sshProcess.on("close", (code) => {
+        vscode.window.showInformationMessage(
+          `SSH session closed with code ${code}`
+        );
+        sshProcess = null; // 清空 SSH 进程状态
+      });
+
+      // send first command after connection
+      vscode.window.showInformationMessage("SSH connection established.");
+      sendCommandToSSH("ls");
+      sendCommandToSSH("cd tests");
+      sendCommandToSSH("ls");
+    }
+  );
+
   context.subscriptions.push(runShell);
   context.subscriptions.push(vagrantUp);
+  context.subscriptions.push(connectCommand);
 }
 
 // This method is called when your extension is deactivated
