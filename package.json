@@ -14,12 +14,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "helloworld.helloWorld",
-        "title": "Hello World"
-      },
-      {
         "command": "extension.runShellScript",
         "title": "Run test.sh"
+      },
+      {
+        "command": "extension.runVagrant",
+        "title": "Run vagrant"
       }
     ]
   },
