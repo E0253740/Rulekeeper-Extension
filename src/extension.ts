@@ -136,9 +136,25 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const runAnotherCommand = vscode.commands.registerCommand(
+    "extension.runAnotherCommand",
+    () => {
+      vscode.window
+        .showInputBox({
+          prompt: "Enter the additional command to run on the VM",
+        })
+        .then((command) => {
+          if (command) {
+            sendCommandToTerminal(command);
+          }
+        });
+    }
+  );
+
   context.subscriptions.push(runShell);
   context.subscriptions.push(vagrantUp);
   context.subscriptions.push(connectCommand);
+  context.subscriptions.push(runAnotherCommand);
 }
 
 // This method is called when your extension is deactivated

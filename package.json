@@ -24,6 +24,10 @@
       {
         "command": "extension.persistentVagrantSsh",
         "title": "Run vagrant persistently"
+      },
+      {
+        "command": "extension.runAnotherCommand",
+        "title": "Run command after connection"
       }
     ]
   },
