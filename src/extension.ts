@@ -141,11 +141,11 @@ export function activate(context: vscode.ExtensionContext) {
     () => {
       vscode.window
         .showInputBox({
-          prompt: "Enter the additional command to run on the VM",
+          prompt: "Enter the project to run rulekeeper",
         })
-        .then((command) => {
-          if (command) {
-            sendCommandToTerminal(command);
+        .then((project) => {
+          if (project) {
+            sendCommandToTerminal(`cd ${project} && ls`);
           }
         });
     }
