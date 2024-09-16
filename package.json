@@ -4,7 +4,7 @@
   "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.91.0"
+    "vscode": "^1.93.0"
   },
   "categories": [
     "Other"
@@ -14,12 +14,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "helloworld.helloWorld",
-        "title": "Hello World"
-      },
-      {
         "command": "extension.runShellScript",
         "title": "Run test.sh"
+      },
+      {
+        "command": "extension.persistentVagrantSsh",
+        "title": "Run vagrant persistently"
+      },
+      {
+        "command": "extension.runAnotherCommand",
+        "title": "Run command after connection"
       }
     ]
   },
@@ -32,7 +36,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.91.0",
+    "@types/vscode": "^1.93.0",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
