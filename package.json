@@ -26,8 +26,8 @@
         "title": "Run vagrant persistently"
       },
       {
-        "command": "extension.runAnotherCommand",
-        "title": "Run command after connection"
+        "command": "extension.runRuleKeeperOnProject",
+        "title": "Run rulekeeper on project"
       }
     ]
   },

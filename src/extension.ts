@@ -136,8 +136,8 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const runAnotherCommand = vscode.commands.registerCommand(
-    "extension.runAnotherCommand",
+  const runRuleKeeperOnProject = vscode.commands.registerCommand(
+    "extension.runRuleKeeperOnProject",
     () => {
       vscode.window
         .showInputBox({
@@ -145,7 +145,8 @@ export function activate(context: vscode.ExtensionContext) {
         })
         .then((project) => {
           if (project) {
-            sendCommandToTerminal(`cd ${project} && ls`);
+            sendCommandToTerminal(`./setup.sh ${project}`);
+            sendCommandToTerminal(`./run.sh ${project}`);
           }
         });
     }
@@ -154,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(runShell);
   context.subscriptions.push(vagrantUp);
   context.subscriptions.push(connectCommand);
-  context.subscriptions.push(runAnotherCommand);
+  context.subscriptions.push(runRuleKeeperOnProject);
 }
 
 // This method is called when your extension is deactivated
