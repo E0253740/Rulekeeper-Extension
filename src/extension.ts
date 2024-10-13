@@ -5,6 +5,7 @@ import { exec, spawn, ChildProcessWithoutNullStreams } from "child_process";
 import * as path from "path";
 import * as Client from "scp2"; //For copying files
 import * as fs from "fs";
+import { resolveProjectReferencePath } from "typescript";
 
 const filePath = path.join(__dirname, "..", "src", "test.sh");
 const vagrantPath = path.join(
@@ -37,7 +38,7 @@ function createTerminal() {
   terminal.show();
 }
 
-function sendCommandToTerminal(command: string) {
+function sendCommandToTerminal(command: string) { //Not able to capture output --> Need to use spawn
   if (terminal) {
     terminal.sendText(command);
   } else {
@@ -136,6 +137,70 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
+  async function runCommandAndCaptureOutput(command: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const sshProcess = spawn('ssh', ['-i', identityFile, '-p', '2222', 'vagrant@127.0.0.1', command]);
+        let output = '';
+
+        sshProcess.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        // sshProcess.stderr.on('data', (data) => {
+        //     output += data.toString();
+        // });
+
+        sshProcess.on('close', (code) => {
+            if (code === 0) {
+                resolve(output);
+            } else {
+                reject(`Command failed with code ${code}: ${output}`);
+            }
+        });
+    });
+}
+  
+
+  const activateCommand = vscode.commands.registerCommand(
+    "extension.activatePlugin", async () =>{
+      //connect to SSH
+      createTerminal();
+      vscode.window.showInformationMessage("SSH connection established.");
+      sendCommandToTerminal("ls");
+      sendCommandToTerminal("cd tests");
+      sendCommandToTerminal("ls");
+      // Prompt for Project 
+
+      const outputChannel = vscode.window.createOutputChannel("SSH Output");
+      outputChannel.show(true);
+    
+      vscode.window.showInformationMessage("Im Waiting");
+      const project = await vscode.window.showInputBox({
+        prompt: "Enter the project to run rulekeeper",
+        placeHolder: "Project Name",
+        ignoreFocusOut:true
+      });
+
+      if(project !== undefined && project.trim() !== ""){
+        vscode.window.showInformationMessage("hehe");
+        try{
+          const output = await runCommandAndCaptureOutput(`cd tests && ./setup.sh ${project}`);
+          vscode.window.showInformationMessage(`Setup output: ${output}`);
+          //Wait for command to be completed
+          const completionIndicator = "[INFO] - Running container neo4j-rulekeeper"
+          outputChannel.append(output)
+          if (output.includes(completionIndicator)){
+            //Send enter to terminal 
+            sendCommandToTerminal('')
+            sendCommandToTerminal('cd webus');
+          }  
+        }catch(error){
+          vscode.window.showErrorMessage(`Error: ${error}`);
+        }
+      }
+  });
+
+ 
   // command for persistentVagrantSsh
   const connectCommand = vscode.commands.registerCommand(
     "extension.persistentVagrantSsh",
@@ -184,7 +249,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
 
-  // Copying files from local to VM 
+  // Copying files from local to VM --> Connection to SSH is embeded inside this function
   function copyFileToVagrantDirectory(localPath: string, remotePath: string) {
     vscode.window.showInformationMessage("Hello...Im trying to copy now")
     if (!fs.existsSync(localPath)) {
@@ -268,14 +333,17 @@ export function activate(context: vscode.ExtensionContext) {
   const copyCommand = vscode.commands.registerCommand(
     "extension.copyToRemote", 
     () => {
-      const destinationPath = "/home/vagrant/tests/MyCode/";
+      const destinationPath = "/home/vagrant/tests/";
       vscode.window
         .showInputBox({
           prompt: "Enter the local path to your project",
         })
         .then((localPath) => {
           if (localPath) {
-            copyFileToVagrantDirectory(localPath, destinationPath);
+            const folder = path.basename(localPath);
+            const finalpath = path.join(destinationPath, folder, path.sep)
+            console.log(finalpath)
+            copyFileToVagrantDirectory(localPath, finalpath);
           }
           
           
@@ -291,7 +359,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(connectCommand);
   context.subscriptions.push(runAnotherCommand);
   context.subscriptions.push(copyCommand);
+  context.subscriptions.push(activateCommand);
 }
 
-// This method is called when your extension is deactivated
+// This method is called when your extension is deactivated --> Deactivate SSH process
 export function deactivate() {}
