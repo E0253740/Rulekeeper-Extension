@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as path from "path";
-import { spawn, ChildProcessWithoutNullStreams } from "child_process";
+import { spawn, ChildProcess } from "child_process";
 import * as Client from "scp2"; //For copying files
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
@@ -18,7 +18,8 @@ const vagrantPath = path.join(
   "Usability Tests"
 );
 const identityFile =
-  "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+  //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+  "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
 let terminal: vscode.Terminal | null = null;
 
@@ -111,49 +112,135 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  const activateCommand = vscode.commands.registerCommand(
-    "extension.activatePlugin",
-    async () => {
-      //connect to SSH
-      createTerminal();
-      vscode.window.showInformationMessage("SSH connection established.");
-      sendCommandToTerminal("ls");
-      sendCommandToTerminal("cd tests");
-      sendCommandToTerminal("ls");
-      // Prompt for Project
-      const outputChannel = vscode.window.createOutputChannel("SSH Output");
-      outputChannel.show(true);
+  let sshProcess: ChildProcess | undefined;
+  let output = '';
 
-      vscode.window.showInformationMessage("Im Waiting");
-      const project = await vscode.window.showInputBox({
-        prompt: "Enter the project to run rulekeeper",
-        placeHolder: "Project Name",
-        ignoreFocusOut: true,
-      });
+  //Initializing sshProcess
+  function createSSHProcess (){
+    sshProcess = spawn('ssh', ['-tt', '-i', identityFile, '-p', '2222', 'vagrant@127.0.0.1']);
 
-      if (project !== undefined && project.trim() !== "") {
-        vscode.window.showInformationMessage("hehe");
-        try {
-          const output = await spawnConnection.runCommandAndCaptureOutput(
-            identityFile,
-            `cd tests && ./setup.sh ${project}`
-          );
-          vscode.window.showInformationMessage(`Setup output: ${output}`);
-          //Wait for command to be completed
-          const completionIndicator =
-            "[INFO] - Running container neo4j-rulekeeper";
-          outputChannel.append(output);
-          if (output.includes(completionIndicator)) {
-            //Send enter to terminal
-            sendCommandToTerminal("");
-            sendCommandToTerminal("cd webus");
-          }
-        } catch (error) {
-          vscode.window.showErrorMessage(`Error: ${error}`);
-        }
-      }
+    const outputChannel = vscode.window.createOutputChannel("SSH Output");
+    outputChannel.show(true);
+
+    //capture output 
+    sshProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      outputChannel.append(output);
+    });
+
+    // Capture standard error
+    sshProcess.stderr.on('data', (data) => {
+      const errorOutput = data.toString();
+      outputChannel.append(`Error: ${errorOutput}`);
+
+      // Show an error message in VSCode for more visibility
+      vscode.window.showErrorMessage(`SSH Error: ${errorOutput}`);
+  });
+
+    // Log when the process closes
+    sshProcess.on('close', (code) => {
+      vscode.window.showErrorMessage(`SSH process closed with code ${code}.`);
+    });
+  }
+
+  //Function to send command to SSHProcess 
+  function sendCommand(command: string) {
+    if (sshProcess) {
+        sshProcess.stdin.write(`${command}\n`); 
+        //sshProcess.stdin.write(`${command}`)
+    } else {
+        vscode.window.showErrorMessage("SSH process is not running.");
     }
-  );
+  }
+
+  async function runAllCommand(project:string){
+    sendCommand(`cd tests && ./setup.sh ${project}`);
+    vscode.window.showInformationMessage("Running Setup");
+    await detectPrompt("INFO  Started.");
+    sendCommand("")
+    vscode.window.showInformationMessage("Finish Setup");
+    sendCommand(`./run.sh ${project}`)
+    vscode.window.showInformationMessage("Finish run.sh");
+  }
+
+  //Function to wait for prompt
+  function detectPrompt(prompt: string): Promise<void> {
+    return new Promise((resolve) => {
+        // Continuously check the output for the prompt
+        sshProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            if (output.includes(prompt)) {
+                resolve(); // Resolve the promise when the prompt is detected
+            }
+        });
+    });
+}
+
+const activateCommand = vscode.commands.registerCommand(
+  "extension.activatePlugin", async () =>{
+    // Prompt for Project 
+
+    createSSHProcess();
+  
+    vscode.window.showInformationMessage("Im Waiting");
+    const project = await vscode.window.showInputBox({
+      prompt: "Enter the project to run rulekeeper",
+      placeHolder: "Project Name",
+      ignoreFocusOut:true
+    });
+
+    if(project !== undefined && project.trim() !== ""){
+      vscode.window.showInformationMessage("hehe");
+      runAllCommand(project)
+    }else{
+      vscode.window.showErrorMessage("No valid project entered. Please try again.");
+    }
+});
+
+  //Working
+  // const activateCommand = vscode.commands.registerCommand(
+  //   "extension.activatePlugin",
+  //   async () => {
+  //     //connect to SSH
+  //     createTerminal();
+  //     vscode.window.showInformationMessage("SSH connection established.");
+  //     sendCommandToTerminal("ls");
+  //     sendCommandToTerminal("cd tests");
+  //     sendCommandToTerminal("ls");
+  //     // Prompt for Project
+  //     const outputChannel = vscode.window.createOutputChannel("SSH Output");
+  //     outputChannel.show(true);
+
+  //     vscode.window.showInformationMessage("Im Waiting");
+  //     const project = await vscode.window.showInputBox({
+  //       prompt: "Enter the project to run rulekeeper",
+  //       placeHolder: "Project Name",
+  //       ignoreFocusOut: true,
+  //     });
+
+  //     if (project !== undefined && project.trim() !== "") {
+  //       vscode.window.showInformationMessage("hehe");
+  //       try {
+  //         const output = await spawnConnection.runCommandAndCaptureOutput(
+  //           identityFile,
+  //           `cd tests && ./setup.sh ${project}`
+  //         );
+  //         vscode.window.showInformationMessage(`Setup output: ${output}`);
+  //         //Wait for command to be completed
+  //         const completionIndicator =
+  //           "[INFO] - Running container neo4j-rulekeeper";
+  //         outputChannel.append(output);
+  //         if (output.includes(completionIndicator)) {
+  //           //Send enter to terminal
+  //           sendCommandToTerminal("");
+  //           sendCommandToTerminal("cd webus");
+  //         }
+  //       } catch (error) {
+  //         vscode.window.showErrorMessage(`Error: ${error}`);
+  //       }
+  //     }
+  //   }
+  // );
 
   // command for persistentVagrantSsh
   const connectCommand = vscode.commands.registerCommand(
@@ -167,7 +254,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const runRuleKeeperOnProject = vscode.commands.registerCommand(
+  const runRuleKeeperOnProject = vscode.commands.registerCommand( // May not need it if spawn can do this all in 1 shot 
     "extension.runRuleKeeperOnProject",
     () => {
       vscode.window
@@ -295,4 +382,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+  if (sshProcess) {
+    sshProcess.kill(); // Kill the SSH process when the extension is deactivated
+}
+}
