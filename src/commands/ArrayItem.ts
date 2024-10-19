@@ -8,13 +8,18 @@ class ArrayItem extends vscode.TreeItem {
 }
 
 export class ArrayDataProvider implements vscode.TreeDataProvider<ArrayItem> {
-  private array: string[] = ["Element 1", "Element 2", "Element 3"]; // Your array data
+  // Your array data
+  private array: string[];
 
   // Event to signal when data has changed
   private _onDidChangeTreeData: vscode.EventEmitter<ArrayItem | undefined> =
     new vscode.EventEmitter<ArrayItem | undefined>();
   readonly onDidChangeTreeData: vscode.Event<ArrayItem | undefined> =
     this._onDidChangeTreeData.event;
+
+  constructor(array: string[]) {
+    this.array = array;
+  }
 
   // Refresh the tree view
   refresh(): void {
