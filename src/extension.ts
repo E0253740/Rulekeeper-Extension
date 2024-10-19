@@ -104,7 +104,6 @@ export async function activate(context: vscode.ExtensionContext) {
   function sendCommand(command: string) {
     if (sshProcess) {
       sshProcess?.stdin?.write(`${command}\n`);
-      //sshProcess.stdin.write(`${command}`)
     } else {
       vscode.window.showErrorMessage("SSH process is not running.");
     }
@@ -157,51 +156,6 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
   );
-
-  //Working
-  // const activateCommand = vscode.commands.registerCommand(
-  //   "extension.activatePlugin",
-  //   async () => {
-  //     //connect to SSH
-  //     createTerminal();
-  //     vscode.window.showInformationMessage("SSH connection established.");
-  //     sendCommandToTerminal("ls");
-  //     sendCommandToTerminal("cd tests");
-  //     sendCommandToTerminal("ls");
-  //     // Prompt for Project
-  //     const outputChannel = vscode.window.createOutputChannel("SSH Output");
-  //     outputChannel.show(true);
-
-  //     vscode.window.showInformationMessage("Im Waiting");
-  //     const project = await vscode.window.showInputBox({
-  //       prompt: "Enter the project to run rulekeeper",
-  //       placeHolder: "Project Name",
-  //       ignoreFocusOut: true,
-  //     });
-
-  //     if (project !== undefined && project.trim() !== "") {
-  //       vscode.window.showInformationMessage("hehe");
-  //       try {
-  //         const output = await spawnConnection.runCommandAndCaptureOutput(
-  //           identityFile,
-  //           `cd tests && ./setup.sh ${project}`
-  //         );
-  //         vscode.window.showInformationMessage(`Setup output: ${output}`);
-  //         //Wait for command to be completed
-  //         const completionIndicator =
-  //           "[INFO] - Running container neo4j-rulekeeper";
-  //         outputChannel.append(output);
-  //         if (output.includes(completionIndicator)) {
-  //           //Send enter to terminal
-  //           sendCommandToTerminal("");
-  //           sendCommandToTerminal("cd webus");
-  //         }
-  //       } catch (error) {
-  //         vscode.window.showErrorMessage(`Error: ${error}`);
-  //       }
-  //     }
-  //   }
-  // );
 
   // command for persistentVagrantSsh
   const connectCommand = vscode.commands.registerCommand(
