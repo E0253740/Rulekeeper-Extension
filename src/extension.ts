@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as path from "path";
 import { spawn, ChildProcess } from "child_process";
-import * as Client from "scp2"; //For copying files
+import * as CLient from "scp2"; //For copying files
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
 import { runShell, vagrantUp } from "./commands/utils";
@@ -78,13 +78,13 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel.show(true);
 
     //capture output
-    sshProcess.stdout.on("data", (data) => {
+    sshProcess?.stdout?.on("data", (data) => {
       const output = data.toString();
       outputChannel.append(output);
     });
 
     // Capture standard error
-    sshProcess.stderr.on("data", (data) => {
+    sshProcess?.stderr?.on("data", (data) => {
       const errorOutput = data.toString();
       outputChannel.append(`Error: ${errorOutput}`);
 
@@ -101,7 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
   //Function to send command to SSHProcess
   function sendCommand(command: string) {
     if (sshProcess) {
-      sshProcess.stdin.write(`${command}\n`);
+      sshProcess?.stdin?.write(`${command}\n`);
       //sshProcess.stdin.write(`${command}`)
     } else {
       vscode.window.showErrorMessage("SSH process is not running.");
@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
   function detectPrompt(prompt: string): Promise<void> {
     return new Promise((resolve) => {
       // Continuously check the output for the prompt
-      sshProcess.stdout.on("data", (data) => {
+      sshProcess?.stdout?.on("data", (data) => {
         const output = data.toString();
         if (output.includes(prompt)) {
           resolve(); // Resolve the promise when the prompt is detected
@@ -257,7 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage("Local file does not exist.");
       return;
     } else {
-      vscode.window.showErrorMessage("Local file exist.");
+      vscode.window.showInformationMessage("Local file exist.");
     }
     const config = {
       host: "127.0.0.1",
@@ -272,6 +272,7 @@ export function activate(context: vscode.ExtensionContext) {
     localPath = `${localPath}`;
     console.log(localPath);
 
+    const Client = require('scp2');
     Client.scp(
       localPath,
       {
@@ -282,7 +283,7 @@ export function activate(context: vscode.ExtensionContext) {
         path: remotePath,
       },
       (err: any) => {
-        vscode.window.showErrorMessage("SCP Callback reached");
+        vscode.window.showInformationMessage("SCP Callback reached");
         if (err) {
           vscode.window.showErrorMessage(`Failed to copy file: ${err.message}`);
         } else {
@@ -358,8 +359,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {
-  if (sshProcess) {
-    sshProcess.kill(); // Kill the SSH process when the extension is deactivated
-  }
-}
+export function deactivate() {}
