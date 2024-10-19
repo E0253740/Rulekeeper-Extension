@@ -61,7 +61,7 @@
       },
       {
         "view": "myCustomView2",
-        "contents": "This part provides detailed rulekeeper related functions. \n [Run Rulekeeper](command:extension.persistentVagrantSsh)"
+        "contents": "This part provides detailed rulekeeper related functions. \n [Run Rulekeeper](command:extension.activatePlugin)"
       }
     ],
     "commands": [
