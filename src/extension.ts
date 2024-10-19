@@ -8,6 +8,7 @@ import * as Client from "scp2"; //For copying files
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
 import { runShell, vagrantUp } from "./commands/utils";
+import { ArrayDataProvider } from "./commands/ArrayItem";
 
 const vagrantPath = path.join(
   __dirname,
@@ -331,6 +332,22 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage("Hello...Im trying");
     }
   );
+
+  const arrayDataProvider = new ArrayDataProvider();
+
+  // Register the tree view
+  vscode.window.registerTreeDataProvider("arrayTreeView", arrayDataProvider);
+
+  // Command to refresh the array
+  let refreshCommand = vscode.commands.registerCommand(
+    "extension.refreshArray",
+    () => {
+      arrayDataProvider.refresh();
+      vscode.window.showInformationMessage("Project List Updated");
+    }
+  );
+
+  context.subscriptions.push(refreshCommand);
 
   context.subscriptions.push(runShell);
   context.subscriptions.push(vagrantUp);
