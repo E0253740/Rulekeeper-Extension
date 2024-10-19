@@ -7,7 +7,7 @@ import { spawn, ChildProcess } from "child_process";
 import * as Client from "scp2"; //For copying files
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
-import { runShell } from "./commands/utils";
+import { runShell, vagrantUp } from "./commands/utils";
 
 const vagrantPath = path.join(
   __dirname,
@@ -59,143 +59,101 @@ export function activate(context: vscode.ExtensionContext) {
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
 
-  let vagrantUp = vscode.commands.registerCommand(
-    "extension.runVagrant",
-    function () {
-      // 1. start vagrant
-      exec(`cd ${vagrantPath} && vagrant up`, (error, stdout, stderr) => {
-        if (error) {
-          vscode.window.showErrorMessage(`Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          vscode.window.showErrorMessage(`Stderr: ${stderr}`);
-          return;
-        }
-        vscode.window.showInformationMessage("Vagrant VM started");
-
-        executeSSHCommandPromise("ls -l", identityFile).then(() =>
-          executeSSHCommandPromise("cd tests", identityFile).then(() =>
-            executeSSHCommandPromise(`ls`, identityFile)
-          )
-        );
-      });
-    }
-  );
-
-  function executeSSHCommandPromise(command: string, identityFile: string) {
-    return new Promise((resolve, reject) => {
-      exec(
-        `ssh -i ${identityFile} -p 2222 vagrant@127.0.0.1 "${command}"`,
-        (error, stdout, stderr) => {
-          if (error) {
-            vscode.window.showErrorMessage(`SSH Error: ${error.message}`);
-            reject(error);
-            return;
-          }
-          if (stderr) {
-            vscode.window.showErrorMessage(`SSH Stderr: ${stderr}`);
-            reject(stderr);
-            return;
-          }
-
-          // 输出结果
-          const outputChannel =
-            vscode.window.createOutputChannel("Vagrant SSH");
-          outputChannel.show(true);
-          outputChannel.append(stdout);
-
-          // 解析命令执行成功
-          resolve(stdout);
-        }
-      );
-    });
-  }
-
   let sshProcess: ChildProcess | undefined;
-  let output = '';
+  let output = "";
 
   //Initializing sshProcess
-  function createSSHProcess (){
-    sshProcess = spawn('ssh', ['-tt', '-i', identityFile, '-p', '2222', 'vagrant@127.0.0.1']);
+  function createSSHProcess() {
+    sshProcess = spawn("ssh", [
+      "-tt",
+      "-i",
+      identityFile,
+      "-p",
+      "2222",
+      "vagrant@127.0.0.1",
+    ]);
 
     const outputChannel = vscode.window.createOutputChannel("SSH Output");
     outputChannel.show(true);
 
-    //capture output 
-    sshProcess.stdout.on('data', (data) => {
+    //capture output
+    sshProcess.stdout.on("data", (data) => {
       const output = data.toString();
       outputChannel.append(output);
     });
 
     // Capture standard error
-    sshProcess.stderr.on('data', (data) => {
+    sshProcess.stderr.on("data", (data) => {
       const errorOutput = data.toString();
       outputChannel.append(`Error: ${errorOutput}`);
 
       // Show an error message in VSCode for more visibility
       vscode.window.showErrorMessage(`SSH Error: ${errorOutput}`);
-  });
+    });
 
     // Log when the process closes
-    sshProcess.on('close', (code) => {
+    sshProcess.on("close", (code) => {
       vscode.window.showErrorMessage(`SSH process closed with code ${code}.`);
     });
   }
 
-  //Function to send command to SSHProcess 
+  //Function to send command to SSHProcess
   function sendCommand(command: string) {
     if (sshProcess) {
-        sshProcess.stdin.write(`${command}\n`); 
-        //sshProcess.stdin.write(`${command}`)
+      sshProcess.stdin.write(`${command}\n`);
+      //sshProcess.stdin.write(`${command}`)
     } else {
-        vscode.window.showErrorMessage("SSH process is not running.");
+      vscode.window.showErrorMessage("SSH process is not running.");
     }
   }
 
-  async function runAllCommand(project:string){
+  async function runAllCommand(project: string) {
     sendCommand(`cd tests && ./setup.sh ${project}`);
     vscode.window.showInformationMessage("Running Setup");
     await detectPrompt("INFO  Started.");
-    sendCommand("")
+    sendCommand("");
     vscode.window.showInformationMessage("Finish Setup");
-    sendCommand(`./run.sh ${project}`)
+    sendCommand(`./run.sh ${project}`);
     vscode.window.showInformationMessage("Finish run.sh");
   }
 
   //Function to wait for prompt
   function detectPrompt(prompt: string): Promise<void> {
     return new Promise((resolve) => {
-        // Continuously check the output for the prompt
-        sshProcess.stdout.on('data', (data) => {
-            const output = data.toString();
-            if (output.includes(prompt)) {
-                resolve(); // Resolve the promise when the prompt is detected
-            }
-        });
+      // Continuously check the output for the prompt
+      sshProcess.stdout.on("data", (data) => {
+        const output = data.toString();
+        if (output.includes(prompt)) {
+          resolve(); // Resolve the promise when the prompt is detected
+        }
+      });
     });
-}
+  }
 
-const activateCommand = vscode.commands.registerCommand(
-  "extension.activatePlugin", async () =>{
-    // Prompt for Project 
+  const activateCommand = vscode.commands.registerCommand(
+    "extension.activatePlugin",
+    async () => {
+      // Prompt for Project
 
-    createSSHProcess();
-  
-    vscode.window.showInformationMessage("Im Waiting");
-    const project = await vscode.window.showInputBox({
-      prompt: "Enter the project to run rulekeeper",
-      placeHolder: "Project Name",
-      ignoreFocusOut:true
-    });
+      createSSHProcess();
 
-    if(project !== undefined && project.trim() !== ""){
-      vscode.window.showInformationMessage("hehe");
-      runAllCommand(project)
-    }else{
-      vscode.window.showErrorMessage("No valid project entered. Please try again.");
+      vscode.window.showInformationMessage("Im Waiting");
+      const project = await vscode.window.showInputBox({
+        prompt: "Enter the project to run rulekeeper",
+        placeHolder: "Project Name",
+        ignoreFocusOut: true,
+      });
+
+      if (project !== undefined && project.trim() !== "") {
+        vscode.window.showInformationMessage("hehe");
+        runAllCommand(project);
+      } else {
+        vscode.window.showErrorMessage(
+          "No valid project entered. Please try again."
+        );
+      }
     }
-});
+  );
 
   //Working
   // const activateCommand = vscode.commands.registerCommand(
@@ -254,7 +212,8 @@ const activateCommand = vscode.commands.registerCommand(
     }
   );
 
-  const runRuleKeeperOnProject = vscode.commands.registerCommand( // May not need it if spawn can do this all in 1 shot 
+  const runRuleKeeperOnProject = vscode.commands.registerCommand(
+    // May not need it if spawn can do this all in 1 shot
     "extension.runRuleKeeperOnProject",
     () => {
       vscode.window
@@ -385,5 +344,5 @@ const activateCommand = vscode.commands.registerCommand(
 export function deactivate() {
   if (sshProcess) {
     sshProcess.kill(); // Kill the SSH process when the extension is deactivated
-}
+  }
 }
