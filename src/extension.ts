@@ -9,6 +9,8 @@ import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
 import { runShell, vagrantUp } from "./commands/utils";
 import { ArrayDataProvider } from "./commands/ArrayItem";
+import { runCommandAndCaptureOutput } from "./commands/spawnConnection";
+import { showProject } from "./commands/showProject";
 
 const vagrantPath = path.join(
   __dirname,
@@ -26,12 +28,12 @@ let terminal: vscode.Terminal | null = null;
 
 function createTerminal() {
   if (terminal) {
-    // 如果已经存在终端，则重新使用
+    // if the terminal exists, just reuse
     terminal.show();
     return;
   }
 
-  // 创建新的 VSCode 终端
+  // create new vscode terminal
   terminal = vscode.window.createTerminal({
     name: "Vagrant SSH",
     shellPath: "ssh",
@@ -51,7 +53,7 @@ function sendCommandToTerminal(command: string) {
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "helloworld" is now active!');
@@ -265,6 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
       username: "vagrant",
       privateKey: require("fs").readFileSync(
         "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa"
+        // "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa"
       ), // Path to private key
     };
 
@@ -272,7 +275,7 @@ export function activate(context: vscode.ExtensionContext) {
     localPath = `${localPath}`;
     console.log(localPath);
 
-    const Client = require('scp2');
+    const Client = require("scp2");
     Client.scp(
       localPath,
       {
@@ -326,7 +329,7 @@ export function activate(context: vscode.ExtensionContext) {
           if (localPath) {
             const folder = path.basename(localPath);
             const finalpath = path.join(destinationPath, folder, path.sep);
-            console.log(finalpath);
+            console.log("final path: " + finalpath);
             copyFileToVagrantDirectory(localPath, finalpath);
           }
         });
@@ -334,7 +337,9 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const arrayDataProvider = new ArrayDataProvider();
+  let projectList = await showProject(identityFile);
+
+  const arrayDataProvider = new ArrayDataProvider(projectList);
 
   // Register the tree view
   vscode.window.registerTreeDataProvider("arrayTreeView", arrayDataProvider);
