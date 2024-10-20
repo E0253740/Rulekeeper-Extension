@@ -1,9 +1,13 @@
-# helloworld README
+# Rulekeeper Plugin README
 
-This is the README for your extension "helloworld". After writing up a brief description, we recommend including the following sections.
+This is the README for the rulekeeper plugin, which is used for user to check if their project is GDPR compliant based on the rulekeeper algorithm. This plugin helps to connect your local machine to the virtual machine containing the rulekeeper algorithm. 
 
 ## Features
 
+Below are the features this plugin can bring you. 
+- connect to the virtual machine 
+- Copy code folder into virtual machine (Your entire code folder needs to be in the virtual machine for the rulekeeper to assess the compliant)
+- Run Rulekeeper
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
 For example if there is an image subfolder under your extension project workspace:
@@ -14,7 +18,7 @@ For example if there is an image subfolder under your extension project workspac
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Before running this plugin, you will need to have Vagrant and VirtualBox installed. It is needed to connect your local machine to the virtual machine containing the rulekeeper algorithm. 
 
 ## Extension Settings
 
