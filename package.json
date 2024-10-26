@@ -28,6 +28,7 @@
     ]
   },
   "main": "./out/extension.js",
+  "icon": "media/icon.png",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
