@@ -2,6 +2,10 @@
 
 This is the README for the rulekeeper plugin, which is used for user to check if their project is GDPR compliant based on the rulekeeper algorithm. This plugin helps to connect your local machine to the virtual machine containing the rulekeeper algorithm.
 
+## Configurations
+
+- To connect the virtual machine, your rsa key is required for ssh connection. Configure the local file path in settings: **Rulekeeper** › **Connection**: **Rsa File**
+
 ## Features
 
 Below are the features this plugin can bring you.
@@ -24,14 +28,10 @@ Before running this plugin, you will need to have Vagrant and VirtualBox install
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+- `extension.runShellScript`: run shell script
+- `extension.persistentVagrantSsh`: connect to Vagrant persistently
+- `extension.copyToRemote`: copy local projects into VM
+- `extension.activatePlugin`: run rulekeeper on project
 
 ## Known Issues
 
