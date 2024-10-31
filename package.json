@@ -13,6 +13,10 @@
     "extension.persistentVagrantSsh",
     "onStartupFinished"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/E0253740/Rulekeeper-Extension"
+  },
   "menus": {
     "statusBar": [
       {
@@ -47,7 +51,7 @@
         },
         {
           "id": "myCustomView2",
-          "name": "RuleKeeper"
+          "name": "RuleKeeper Operations"
         },
         {
           "id": "arrayTreeView",
@@ -93,6 +97,17 @@
       {
         "command": "extension.refreshArray",
         "title": "Refresh Array"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "RuleKeeper",
+        "properties": {
+          "rulekeeper.connection.rsaFile": {
+            "type": "string",
+            "description": "Directory for your rsa file to connect Vagrant"
+          }
+        }
       }
     ]
   },
