@@ -20,9 +20,6 @@ const vagrantPath = path.join(
   "rulekeeper",
   "Usability Tests"
 );
-// const identityFile =
-//   "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
-// "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
 const config = vscode.workspace.getConfiguration("rulekeeper");
 const identityFile: string = config.get("connection.rsaFile") || "";
@@ -103,6 +100,13 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
+  let projectList = await showProject(identityFile);
+
+  const arrayDataProvider = new ArrayDataProvider(projectList);
+
+  // Register the tree view
+  vscode.window.registerTreeDataProvider("arrayTreeView", arrayDataProvider);
+
   //Function to send command to SSHProcess
   function sendCommand(command: string) {
     if (sshProcess) {
@@ -149,7 +153,11 @@ export async function activate(context: vscode.ExtensionContext) {
         ignoreFocusOut: true,
       });
 
-      if (project !== undefined && project.trim() !== "") {
+      if (
+        project !== undefined &&
+        project.trim() !== "" &&
+        projectList.indexOf(project) !== -1
+      ) {
         vscode.window.showInformationMessage("hehe");
         runAllCommand(project);
       } else {
@@ -222,10 +230,7 @@ export async function activate(context: vscode.ExtensionContext) {
       host: "127.0.0.1",
       port: 2222, // Vagrant SSH default port
       username: "vagrant",
-      privateKey: require("fs").readFileSync(
-        // "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa"
-        "C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa"
-      ), // Path to private key
+      privateKey: require("fs").readFileSync(identityFile), // Path to private key
     };
 
     //handling space in local Path
@@ -293,13 +298,6 @@ export async function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage("Hello...Im trying");
     }
   );
-
-  let projectList = await showProject(identityFile);
-
-  const arrayDataProvider = new ArrayDataProvider(projectList);
-
-  // Register the tree view
-  vscode.window.registerTreeDataProvider("arrayTreeView", arrayDataProvider);
 
   // Command to refresh the array
   let refreshCommand = vscode.commands.registerCommand(
