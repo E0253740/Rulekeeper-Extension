@@ -20,10 +20,13 @@ const vagrantPath = path.join(
   "rulekeeper",
   "Usability Tests"
 );
+// const identityFile =
+//   //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+// "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
 const config = vscode.workspace.getConfiguration("rulekeeper");
 const identityFile: string = config.get("connection.rsaFile") || "";
-
+  
 let terminal: vscode.Terminal | null = null;
 
 function createTerminal() {
@@ -90,15 +93,87 @@ export async function activate(context: vscode.ExtensionContext) {
       const errorOutput = data.toString();
       outputChannel.append(`Error: ${errorOutput}`);
 
-      // Show an error message in VSCode for more visibility
       vscode.window.showErrorMessage(`SSH Error: ${errorOutput}`);
     });
 
-    // Log when the process closes
     sshProcess.on("close", (code) => {
       vscode.window.showErrorMessage(`SSH process closed with code ${code}.`);
     });
   }
+  
+  // Function to detect pattern and let user know which part of the code has problem -- what if there is 2 difference?
+  function alertCode(output: string, project: string) {
+    const match = output.match(/Set\((\d+)\) \{(.+?)\}/);
+    if (match) {
+      const number = parseInt(match[1], 10);
+      // let phrases = match[2].trim();
+      let phrases = match[2].split(/,\s*/);
+      console.log("phrases", phrases); 
+
+    phrases.forEach((phrase) => {{
+      phrase = phrase.trim().replace(/^['"]|['"]$/g, ""); // Remove surrounding quotes
+      console.log("Processing phrase:", phrase);
+
+      // Convert HTTP method phrase to router method format
+      const httpMethodMatch = phrase.match(/(GET|POST|PUT|DELETE) (\/.+)/);
+      console.log("look at me", httpMethodMatch);
+      if (httpMethodMatch) {
+        const method = httpMethodMatch[1].toLowerCase(); 
+        const path = httpMethodMatch[2].match(/\/(\w+)'?$/);
+        console.log("method", method)
+        console.log("path", path)
+        let routerphrase = `router.${method}(`;
+        if (path){
+          let searchPath = path[1]
+          console.log("searchPath",searchPath);
+          searchPhraseInFiles(searchPath, routerphrase, project);
+        }
+      }
+    }});
+      vscode.window.showErrorMessage("GPRD Non-compliance detected, please check problem tab", {modal:true});
+    }
+  }
+
+// Function to search files in the code base and report issues in problem tab to let user know which part of the code has problem
+function searchPhraseInFiles(path: string, phrase: string,project: string) {
+  if (!sshProcess) 
+    return;
+
+  // Construct the grep command to search recursively in the project folder for the given phrase
+  const grepCommand = `grep -rn '${project}' -e '${phrase}'`;
+
+  // Send the command to the SSH process
+  sshProcess.stdin?.write(`${grepCommand}\n`);
+
+  // Capture the grep output
+  sshProcess.stdout?.on("data", (data) => {
+    const output = data.toString();
+
+    // Parse grep output to extract file paths and line numbers
+    const matches = output.match(/(.+?):(\d+):(.+)/g);
+    if (matches) {
+      console.log("it matches")
+      matches.forEach((match: { match: (arg0: RegExp) => any[]; }) => {
+        const [, filePath, line, text] = match.match(/(.+?):(\d+):(.+)/) || [];
+
+        if (filePath && line && text && text.includes(path)) {
+          const lineNumber = parseInt(line, 10) - 1; // Convert to 0-based index for VSCode
+
+          // Add the issue to VSCode Problems tab
+          const diagnosticCollection = vscode.languages.createDiagnosticCollection("sshOutput");
+          const uri = vscode.Uri.file(filePath);
+          const diagnostic = new vscode.Diagnostic(
+            new vscode.Range(lineNumber, 0, lineNumber, text.length),
+            `Please check ${filePath} , ${text} function for GDPR Non-compliance`,
+            vscode.DiagnosticSeverity.Warning
+          );
+
+          diagnosticCollection.set(uri, [diagnostic]);
+        }
+      });
+    }
+  });
+}
 
   let projectList = await showProject(identityFile);
 
@@ -124,6 +199,11 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage("Finish Setup");
     sendCommand(`./run.sh ${project}`);
     vscode.window.showInformationMessage("Finish run.sh");
+
+    sshProcess?.stdout?.on("data", (data) => {
+      alertCode(data.toString(), project);
+    });
+
   }
 
   //Function to wait for prompt
@@ -133,7 +213,7 @@ export async function activate(context: vscode.ExtensionContext) {
       sshProcess?.stdout?.on("data", (data) => {
         const output = data.toString();
         if (output.includes(prompt)) {
-          resolve(); // Resolve the promise when the prompt is detected
+          resolve();
         }
       });
     });
@@ -196,27 +276,27 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  function getVagrantfileDirectory(): string | null {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
+  // function getVagrantfileDirectory(): string | null {
+  //   const workspaceFolders = vscode.workspace.workspaceFolders;
 
-    if (workspaceFolders && workspaceFolders.length > 0) {
-      const rootPath = workspaceFolders[0].uri.fsPath;
-      const vagrantfilePath = path.join(rootPath, "Vagrantfile");
+  //   if (workspaceFolders && workspaceFolders.length > 0) {
+  //     const rootPath = workspaceFolders[0].uri.fsPath;
+  //     const vagrantfilePath = path.join(rootPath, "Vagrantfile");
 
-      // Check if the Vagrantfile exists
-      if (fs.existsSync(vagrantfilePath)) {
-        return rootPath; // Return the directory containing the Vagrantfile
-      } else {
-        vscode.window.showErrorMessage(
-          "Vagrantfile not found in the workspace."
-        );
-        return null;
-      }
-    } else {
-      vscode.window.showErrorMessage("No workspace is open.");
-      return null;
-    }
-  }
+  //     // Check if the Vagrantfile exists
+  //     if (fs.existsSync(vagrantfilePath)) {
+  //       return rootPath; // Return the directory containing the Vagrantfile
+  //     } else {
+  //       vscode.window.showErrorMessage(
+  //         "Vagrantfile not found in the workspace."
+  //       );
+  //       return null;
+  //     }
+  //   } else {
+  //     vscode.window.showErrorMessage("No workspace is open.");
+  //     return null;
+  //   }
+  // }
 
   function copyFileToVagrantDirectory(localPath: string, remotePath: string) {
     vscode.window.showInformationMessage("Hello...Im trying to copy now");
@@ -259,25 +339,25 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   //getting vagrant config
-  function getVagrantSSHConfig(): Promise<any> {
-    return new Promise((resolve, reject) => {
-      exec("vagrant ssh-config", (error, stdout, stderr) => {
-        if (error) {
-          reject(`Error getting Vagrant SSH config: ${stderr}`);
-        } else {
-          // Parse the SSH config output
-          const sshConfig: any = {};
-          stdout.split("\n").forEach((line) => {
-            const [key, value] = line.trim().split(" ");
-            if (key && value) {
-              sshConfig[key] = value;
-            }
-          });
-          resolve(sshConfig);
-        }
-      });
-    });
-  }
+  // function getVagrantSSHConfig(): Promise<any> {
+  //   return new Promise((resolve, reject) => {
+  //     exec("vagrant ssh-config", (error, stdout, stderr) => {
+  //       if (error) {
+  //         reject(`Error getting Vagrant SSH config: ${stderr}`);
+  //       } else {
+  //         // Parse the SSH config output
+  //         const sshConfig: any = {};
+  //         stdout.split("\n").forEach((line) => {
+  //           const [key, value] = line.trim().split(" ");
+  //           if (key && value) {
+  //             sshConfig[key] = value;
+  //           }
+  //         });
+  //         resolve(sshConfig);
+  //       }
+  //     });
+  //   });
+  // }
 
   const copyCommand = vscode.commands.registerCommand(
     "extension.copyToRemote",
