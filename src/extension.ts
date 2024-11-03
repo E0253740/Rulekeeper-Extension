@@ -20,12 +20,12 @@ const vagrantPath = path.join(
   "rulekeeper",
   "Usability Tests"
 );
-const identityFile =
-  //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
-"/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+// const identityFile =
+//   //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+// "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
-// const config = vscode.workspace.getConfiguration("rulekeeper");
-// const identityFile: string = config.get("connection.rsaFile") || "";
+const config = vscode.workspace.getConfiguration("rulekeeper");
+const identityFile: string = config.get("connection.rsaFile") || "";
   
 let terminal: vscode.Terminal | null = null;
 
