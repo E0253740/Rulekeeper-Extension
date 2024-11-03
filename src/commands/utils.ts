@@ -30,9 +30,8 @@ export const runShell = vscode.commands.registerCommand(
   }
 );
 
-const identityFile =
-  //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
-  "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+const config = vscode.workspace.getConfiguration("rulekeeper");
+const identityFile: string = config.get("connection.rsaFile") || "";
 
 export const vagrantUp = vscode.commands.registerCommand(
   "extension.runVagrant",
