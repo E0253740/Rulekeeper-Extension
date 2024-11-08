@@ -17,7 +17,8 @@ const vagrantPath = path.join(
 export const runShell = vscode.commands.registerCommand(
   "extension.runShellScript",
   () => {
-    const bashPath = "D:\\Git\\usr\\bin\\bash.exe";
+    const config = vscode.workspace.getConfiguration("rulekeeper");
+    const bashPath: string = config.get("bashPath") || "";
     // Run shell script with git bash
     exec(`"${bashPath}" "${filePath}"`, (error, stdout, stderr) => {
       if (error) {
