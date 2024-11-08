@@ -12,6 +12,7 @@ import { ArrayDataProvider } from "./commands/ArrayItem";
 import { runCommandAndCaptureOutput } from "./commands/spawnConnection";
 import { showProject } from "./commands/showProject";
 import { copyFileWindows } from "./commands/copyProject";
+import { visualizeJson } from "./commands/visualize";
 
 const vagrantPath = path.join(
   __dirname,
@@ -403,6 +404,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(copyCommand);
   context.subscriptions.push(activateCommand);
   context.subscriptions.push(copyFileWindows);
+  context.subscriptions.push(visualizeJson);
 }
 
 // This method is called when your extension is deactivated
