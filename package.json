@@ -62,7 +62,7 @@
     "viewsWelcome": [
       {
         "view": "myCustomView1",
-        "contents": "This part provides a series of functions to better understand the files and projects inside vagrant virtual machine.\n [Connect Vagrant Persistently](command:extension.persistentVagrantSsh) \n [Check Projects](command:extension.refreshArray) \n [Copy Project into VM](command:extension.persistentVagrantSsh)"
+        "contents": "This part provides a series of functions to better understand the files and projects inside vagrant virtual machine.\n [Connect Vagrant Persistently](command:extension.persistentVagrantSsh) \n [Check Projects](command:extension.refreshArray) \n [Copy Project into VM - Mac](command:extension.copyToRemote) \n [Copy Project into VM - Windows](command:extension.copyFolderToVagrant)"
       },
       {
         "view": "myCustomView2",
@@ -97,6 +97,10 @@
       {
         "command": "extension.refreshArray",
         "title": "Refresh Array"
+      },
+      {
+        "command": "extension.copyFolderToVagrant",
+        "title": "Copy File To Vagrant - Windows"
       }
     ],
     "configuration": [
@@ -106,6 +110,10 @@
           "rulekeeper.connection.rsaFile": {
             "type": "string",
             "description": "Directory for your rsa file to connect Vagrant"
+          },
+          "rulekeeper.bashPath": {
+            "type": "string",
+            "description": "Directory for your bash.exe"
           }
         }
       }
