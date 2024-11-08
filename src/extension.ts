@@ -11,6 +11,7 @@ import { runShell, vagrantUp } from "./commands/utils";
 import { ArrayDataProvider } from "./commands/ArrayItem";
 import { runCommandAndCaptureOutput } from "./commands/spawnConnection";
 import { showProject } from "./commands/showProject";
+import { copyFileWindows } from "./commands/copyProject";
 
 const vagrantPath = path.join(
   __dirname,
@@ -26,7 +27,7 @@ const vagrantPath = path.join(
 
 const config = vscode.workspace.getConfiguration("rulekeeper");
 const identityFile: string = config.get("connection.rsaFile") || "";
-  
+
 let terminal: vscode.Terminal | null = null;
 
 function createTerminal() {
@@ -100,7 +101,7 @@ export async function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage(`SSH process closed with code ${code}.`);
     });
   }
-  
+
   // Function to detect pattern and let user know which part of the code has problem -- what if there is 2 difference?
   function alertCode(output: string, project: string) {
     const match = output.match(/Set\((\d+)\) \{(.+?)\}/);
@@ -108,72 +109,78 @@ export async function activate(context: vscode.ExtensionContext) {
       const number = parseInt(match[1], 10);
       // let phrases = match[2].trim();
       let phrases = match[2].split(/,\s*/);
-      console.log("phrases", phrases); 
+      console.log("phrases", phrases);
 
-    phrases.forEach((phrase) => {{
-      phrase = phrase.trim().replace(/^['"]|['"]$/g, ""); // Remove surrounding quotes
-      console.log("Processing phrase:", phrase);
+      phrases.forEach((phrase) => {
+        {
+          phrase = phrase.trim().replace(/^['"]|['"]$/g, ""); // Remove surrounding quotes
+          console.log("Processing phrase:", phrase);
 
-      // Convert HTTP method phrase to router method format
-      const httpMethodMatch = phrase.match(/(GET|POST|PUT|DELETE) (\/.+)/);
-      console.log("look at me", httpMethodMatch);
-      if (httpMethodMatch) {
-        const method = httpMethodMatch[1].toLowerCase(); 
-        const path = httpMethodMatch[2].match(/\/(\w+)'?$/);
-        console.log("method", method)
-        console.log("path", path)
-        let routerphrase = `router.${method}(`;
-        if (path){
-          let searchPath = path[1]
-          console.log("searchPath",searchPath);
-          searchPhraseInFiles(searchPath, routerphrase, project);
+          // Convert HTTP method phrase to router method format
+          const httpMethodMatch = phrase.match(/(GET|POST|PUT|DELETE) (\/.+)/);
+          console.log("look at me", httpMethodMatch);
+          if (httpMethodMatch) {
+            const method = httpMethodMatch[1].toLowerCase();
+            const path = httpMethodMatch[2].match(/\/(\w+)'?$/);
+            console.log("method", method);
+            console.log("path", path);
+            let routerphrase = `router.${method}(`;
+            if (path) {
+              let searchPath = path[1];
+              console.log("searchPath", searchPath);
+              searchPhraseInFiles(searchPath, routerphrase, project);
+            }
+          }
         }
-      }
-    }});
-      vscode.window.showErrorMessage("GPRD Non-compliance detected, please check problem tab", {modal:true});
+      });
+      vscode.window.showErrorMessage(
+        "GPRD Non-compliance detected, please check problem tab",
+        { modal: true }
+      );
     }
   }
 
-// Function to search files in the code base and report issues in problem tab to let user know which part of the code has problem
-function searchPhraseInFiles(path: string, phrase: string,project: string) {
-  if (!sshProcess) 
-    return;
+  // Function to search files in the code base and report issues in problem tab to let user know which part of the code has problem
+  function searchPhraseInFiles(path: string, phrase: string, project: string) {
+    if (!sshProcess) return;
 
-  // Construct the grep command to search recursively in the project folder for the given phrase
-  const grepCommand = `grep -rn '${project}' -e '${phrase}'`;
+    // Construct the grep command to search recursively in the project folder for the given phrase
+    const grepCommand = `grep -rn '${project}' -e '${phrase}'`;
 
-  // Send the command to the SSH process
-  sshProcess.stdin?.write(`${grepCommand}\n`);
+    // Send the command to the SSH process
+    sshProcess.stdin?.write(`${grepCommand}\n`);
 
-  // Capture the grep output
-  sshProcess.stdout?.on("data", (data) => {
-    const output = data.toString();
+    // Capture the grep output
+    sshProcess.stdout?.on("data", (data) => {
+      const output = data.toString();
 
-    // Parse grep output to extract file paths and line numbers
-    const matches = output.match(/(.+?):(\d+):(.+)/g);
-    if (matches) {
-      console.log("it matches")
-      matches.forEach((match: { match: (arg0: RegExp) => any[]; }) => {
-        const [, filePath, line, text] = match.match(/(.+?):(\d+):(.+)/) || [];
+      // Parse grep output to extract file paths and line numbers
+      const matches = output.match(/(.+?):(\d+):(.+)/g);
+      if (matches) {
+        console.log("it matches");
+        matches.forEach((match: { match: (arg0: RegExp) => any[] }) => {
+          const [, filePath, line, text] =
+            match.match(/(.+?):(\d+):(.+)/) || [];
 
-        if (filePath && line && text && text.includes(path)) {
-          const lineNumber = parseInt(line, 10) - 1; // Convert to 0-based index for VSCode
+          if (filePath && line && text && text.includes(path)) {
+            const lineNumber = parseInt(line, 10) - 1; // Convert to 0-based index for VSCode
 
-          // Add the issue to VSCode Problems tab
-          const diagnosticCollection = vscode.languages.createDiagnosticCollection("sshOutput");
-          const uri = vscode.Uri.file(filePath);
-          const diagnostic = new vscode.Diagnostic(
-            new vscode.Range(lineNumber, 0, lineNumber, text.length),
-            `Please check ${filePath} , ${text} function for GDPR Non-compliance`,
-            vscode.DiagnosticSeverity.Warning
-          );
+            // Add the issue to VSCode Problems tab
+            const diagnosticCollection =
+              vscode.languages.createDiagnosticCollection("sshOutput");
+            const uri = vscode.Uri.file(filePath);
+            const diagnostic = new vscode.Diagnostic(
+              new vscode.Range(lineNumber, 0, lineNumber, text.length),
+              `Please check ${filePath} , ${text} function for GDPR Non-compliance`,
+              vscode.DiagnosticSeverity.Warning
+            );
 
-          diagnosticCollection.set(uri, [diagnostic]);
-        }
-      });
-    }
-  });
-}
+            diagnosticCollection.set(uri, [diagnostic]);
+          }
+        });
+      }
+    });
+  }
 
   let projectList = await showProject(identityFile);
 
@@ -203,7 +210,6 @@ function searchPhraseInFiles(path: string, phrase: string,project: string) {
     sshProcess?.stdout?.on("data", (data) => {
       alertCode(data.toString(), project);
     });
-
   }
 
   //Function to wait for prompt
@@ -396,6 +402,7 @@ function searchPhraseInFiles(path: string, phrase: string,project: string) {
   context.subscriptions.push(runRuleKeeperOnProject);
   context.subscriptions.push(copyCommand);
   context.subscriptions.push(activateCommand);
+  context.subscriptions.push(copyFileWindows);
 }
 
 // This method is called when your extension is deactivated
