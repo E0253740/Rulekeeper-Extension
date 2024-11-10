@@ -15,49 +15,52 @@ export const visualizeJson = vscode.commands.registerCommand(
         vscode.window.showErrorMessage("No file path provided.");
         return;
       }
-
-      const localPath = path.join(__dirname, "data.json");
-
-      const basePath = "/home/vagrant/tests";
-
-      const command = `scp rulekeeper_tests:${basePath}/${project}/app-analysis-result.json "${localPath}"`;
-
-      // Step 2: Use scp to fetch JSON file from VM
-      await new Promise((resolve, reject) => {
-        exec(
-          `scp rulekeeper_tests:${basePath}/${project}/app-analysis-result.json "${localPath}"`,
-          (error, stdout, stderr) => {
-            if (error) {
-              vscode.window.showErrorMessage(`Failed to fetch JSON: ${stderr}`);
-              return reject(error);
-            }
-            resolve(stdout);
-          }
-        );
-      });
-
-      // Step 3: Read and parse the JSON file
-      const fileContent = fs.readFileSync(localPath, "utf-8");
-      const jsonData = JSON.parse(fileContent);
-
-      const table = `<table border="1" style="border-collapse:collapse; width:100%;"><tr><th>Key</th><th>Value</th></tr>${jsonToTable(
-        jsonData
-      )}</table>`;
-
-      // Step 4: Display the table in a new VSCode webview
-      const panel = vscode.window.createWebviewPanel(
-        "jsonTable",
-        "JSON Data Table",
-        vscode.ViewColumn.One,
-        {}
-      );
-
-      panel.webview.html = `<html><body>${table}</body></html>`;
+      fetchAndVisualize(project, "app-analysis-result.json", "static");
+      fetchAndVisualize(project, "gdpr-manifest-parsed.json", "result");
     } catch (error) {
       vscode.window.showErrorMessage(`Error: ${error}`);
     }
   }
 );
+
+async function fetchAndVisualize(project: string, file: string, type: string) {
+  const localPath = path.join(__dirname, "data.json");
+  const basePath = "/home/vagrant/tests";
+
+  const command = `scp rulekeeper_tests:${basePath}/${project}/${file} "${localPath}"`;
+
+  // Step 2: Use scp to fetch JSON file from VM
+  await new Promise((resolve, reject) => {
+    exec(
+      `scp rulekeeper_tests:${basePath}/${project}/${file} "${localPath}"`,
+      (error, stdout, stderr) => {
+        if (error) {
+          vscode.window.showErrorMessage(`Failed to fetch JSON: ${stderr}`);
+          return reject(error);
+        }
+        resolve(stdout);
+      }
+    );
+  });
+
+  // Step 3: Read and parse the JSON file
+  const fileContent = fs.readFileSync(localPath, "utf-8");
+  const jsonData = JSON.parse(fileContent);
+
+  const table = `<table border="1" style="border-collapse:collapse; width:100%;"><tr><th>Key</th><th>Value</th></tr>${jsonToTable(
+    jsonData
+  )}</table>`;
+
+  // Step 4: Display the table in a new VSCode webview
+  const panel = vscode.window.createWebviewPanel(
+    "jsonTable",
+    `JSON Data Table - ${type}`,
+    vscode.ViewColumn.One,
+    {}
+  );
+
+  panel.webview.html = `<html><body>${table}</body></html>`;
+}
 
 type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
 interface JSONObject {
