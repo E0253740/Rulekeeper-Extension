@@ -389,9 +389,15 @@ export async function activate(context: vscode.ExtensionContext) {
   // Command to refresh the array
   let refreshCommand = vscode.commands.registerCommand(
     "extension.refreshArray",
-    () => {
-      arrayDataProvider.refresh();
-      vscode.window.showInformationMessage("Project List Updated");
+    async () => {
+      const newProjectList = await showProject(identityFile);
+      if (JSON.stringify(newProjectList) !== JSON.stringify(projectList)) {
+        projectList = newProjectList;
+        arrayDataProvider.updateData(projectList);
+        vscode.window.showInformationMessage("Project List Updated");
+      } else {
+        vscode.window.showInformationMessage("No changes in Project List.");
+      }
     }
   );
 

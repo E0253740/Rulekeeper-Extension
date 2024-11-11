@@ -21,6 +21,11 @@ export class ArrayDataProvider implements vscode.TreeDataProvider<ArrayItem> {
     this.array = array;
   }
 
+  updateData(newArray: string[]): void {
+    this.array = newArray; // Update the data
+    this.refresh(); // Refresh the tree view
+  }
+
   // Refresh the tree view
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
