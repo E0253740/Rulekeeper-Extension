@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as path from "path";
-import { spawn, ChildProcess } from "child_process"
+import { spawn, ChildProcess } from "child_process";
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
 import { runShell, vagrantUp } from "./commands/utils";
@@ -13,6 +13,7 @@ import { showProject } from "./commands/showProject";
 import { copyFileWindows } from "./commands/copyProject";
 import { visualizeJson } from "./commands/visualize";
 import {copyFileToVagrantDirectory} from "./commands/SSHcopyDirecToVM";
+
 const vagrantPath = path.join(
   __dirname,
   "..",
@@ -86,7 +87,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
     //capture output
     sshProcess?.stdout?.on("data", (data) => {
-      const output = data.toString();
+      let output = data.toString();
+    //   output = output.replace(
+    //     /\x1b\[[0-9;]*[a-zA-Z]/g,
+    //     ""
+    // ).replace(/[\r\n]+/g, '\n');
       outputChannel.append(output);
     });
 
@@ -122,12 +127,16 @@ export async function activate(context: vscode.ExtensionContext) {
           console.log("look at me", httpMethodMatch);
           if (httpMethodMatch) {
             const method = httpMethodMatch[1].toLowerCase();
-            const path = httpMethodMatch[2].match(/\/(\w+)'?$/);
+            //const path = httpMethodMatch[2].match(/\/(\w+)'?$/); //this path cannot be identified in windows
+            let path = httpMethodMatch[2];
+            console.log('initial path', path);
+            path = path.replace(/\\/g, '/');
             console.log("method", method);
-            console.log("path", path);
+            console.log("normalizedpath", path);
+            const pathMatch = path.match(/\/([\w-]+)/); // This captures the last part after the slash
             let routerphrase = `router.${method}(`;
-            if (path) {
-              let searchPath = path[1];
+            if (pathMatch) {
+              let searchPath = pathMatch[1];
               console.log("searchPath", searchPath);
               searchPhraseInFiles(searchPath, routerphrase, project);
             }
@@ -153,33 +162,47 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Capture the grep output
     sshProcess.stdout?.on("data", (data) => {
-      const output = data.toString();
+      let output = data.toString();       
+      console.log("output",output);
 
-      // Parse grep output to extract file paths and line numbers
-      const matches = output.match(/(.+?):(\d+):(.+)/g);
-      if (matches) {
-        console.log("it matches");
-        matches.forEach((match: { match: (arg0: RegExp) => any[] }) => {
-          const [, filePath, line, text] =
-            match.match(/(.+?):(\d+):(.+)/) || [];
+      const lines = output.split('\n');
+      lines.forEach((line:any) => {
+        let cleanedLine = line.trim();
+        cleanedLine = cleanedLine
+        .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "") // Remove ANSI codes
+        .replace(/[^\x20-\x7E]/g, "");    // Remove non-ASCII characters
+        console.log("Processing Line:", cleanedLine);
 
-          if (filePath && line && text && text.includes(path)) {
-            const lineNumber = parseInt(line, 10) - 1; // Convert to 0-based index for VSCode
+      //   for (let i = 0; i < cleanedLine.length; i++) {
+      //     console.log(`Character: '${cleanedLine[i]}' | Code: ${cleanedLine.charCodeAt(i)}`);
+      // };
 
-            // Add the issue to VSCode Problems tab
-            const diagnosticCollection =
-              vscode.languages.createDiagnosticCollection("sshOutput");
-            const uri = vscode.Uri.file(filePath);
-            const diagnostic = new vscode.Diagnostic(
-              new vscode.Range(lineNumber, 0, lineNumber, text.length),
-              `Please check ${filePath} , ${text} function for GDPR Non-compliance`,
-              vscode.DiagnosticSeverity.Warning
-            );
+        // Apply the regex on each line separately
+        const matches = cleanedLine.match(/^(.+?):(\d+):(.+)/g);
+        if (matches) {
+          console.log("it matches");
+          matches.forEach((match: { match: (arg0: RegExp) => any[] }) => {
+            const [, filePath, line, text] =
+            match.match(/^(.+):(\d+):(.*)$/) || [];
 
-            diagnosticCollection.set(uri, [diagnostic]);
-          }
-        });
-      }
+            if (filePath && line && text && text.includes(path)) {
+              const lineNumber = parseInt(line, 10) - 1; // Convert to 0-based index for VSCode
+
+              // Add the issue to VSCode Problems tab
+              const diagnosticCollection =
+                vscode.languages.createDiagnosticCollection("sshOutput");
+              const uri = vscode.Uri.file(filePath);
+              const diagnostic = new vscode.Diagnostic(
+                new vscode.Range(lineNumber, 0, lineNumber, text.length),
+                `Please check ${filePath} , ${text} function for GDPR Non-compliance`,
+                vscode.DiagnosticSeverity.Warning
+              );
+
+              diagnosticCollection.set(uri, [diagnostic]);
+            }
+          });
+        }
+      });
     });
   }
 
