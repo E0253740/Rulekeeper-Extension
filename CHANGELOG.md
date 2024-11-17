@@ -1,9 +1,21 @@
 # Change Log
 
-All notable changes to the "helloworld" extension will be documented in this file.
+## [Modified] - 2024-11-17
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- Update README.md
 
-## [Unreleased]
+## [Added] - 2024-11-17
+
+- Add copy files with SFTP protocol
+
+## [Modified] - 2024-11-11
+
+- Fix check project issue
+
+## [Added] - 2024-11-5
+
+- Added Visualize Result function
+
+## [Initialized] - 2024-11-1
 
 - Initial release
