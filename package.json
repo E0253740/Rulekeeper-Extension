@@ -62,7 +62,7 @@
     "viewsWelcome": [
       {
         "view": "myCustomView1",
-        "contents": "This part provides a series of functions to better understand the files and projects inside vagrant virtual machine.\n [Connect Vagrant Persistently](command:extension.persistentVagrantSsh) \n [Check Projects](command:extension.refreshArray) \n [Copy Project into VM - Mac](command:extension.copyToRemote) \n [Copy Project into VM - All OS](command:extension.copyFolderToVagrant)"
+        "contents": "This part provides a series of functions to better understand the files and projects inside vagrant virtual machine.\n [Connect Vagrant Persistently](command:extension.persistentVagrantSsh) \n [Check Projects](command:extension.refreshArray) \n [Copy Project into VM (SSH-STFP) - All OS](command:extension.copyToRemote) \n [Copy Project into VM(SCP) - All OS](command:extension.copyFolderToVagrant)"
       },
       {
         "view": "myCustomView2",
@@ -144,6 +144,9 @@
   },
   "dependencies": {
     "json-to-table": "^4.2.1",
-    "scp2": "^0.5.0"
+    "lodash": "^4.17.21",
+    "scp2": "^0.5.0",
+    "ssh2": "^1.16.0",
+    "ssh2-sftp-client": "^11.0.0"
   }
 }

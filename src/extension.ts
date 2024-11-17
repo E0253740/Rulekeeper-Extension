@@ -3,8 +3,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as path from "path";
-import { spawn, ChildProcess } from "child_process";
-import * as CLient from "scp2"; //For copying files
+import { spawn, ChildProcess } from "child_process"
 import * as fs from "fs";
 import * as spawnConnection from "./commands/spawnConnection";
 import { runShell, vagrantUp } from "./commands/utils";
@@ -13,6 +12,7 @@ import { runCommandAndCaptureOutput } from "./commands/spawnConnection";
 import { showProject } from "./commands/showProject";
 import { copyFileWindows } from "./commands/copyProject";
 import { visualizeJson } from "./commands/visualize";
+import {copyFileToVagrantDirectory} from "./commands/SSHcopyDirecToVM";
 
 const vagrantPath = path.join(
   __dirname,
@@ -22,12 +22,12 @@ const vagrantPath = path.join(
   "rulekeeper",
   "Usability Tests"
 );
-// const identityFile =
-//   //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
-// "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+const identityFile =
+  //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+"/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
 
-const config = vscode.workspace.getConfiguration("rulekeeper");
-const identityFile: string = config.get("connection.rsaFile") || "";
+// const config = vscode.workspace.getConfiguration("rulekeeper");
+// const identityFile: string = config.get("connection.rsaFile") || "";
 
 let terminal: vscode.Terminal | null = null;
 
@@ -283,106 +283,22 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  // function getVagrantfileDirectory(): string | null {
-  //   const workspaceFolders = vscode.workspace.workspaceFolders;
-
-  //   if (workspaceFolders && workspaceFolders.length > 0) {
-  //     const rootPath = workspaceFolders[0].uri.fsPath;
-  //     const vagrantfilePath = path.join(rootPath, "Vagrantfile");
-
-  //     // Check if the Vagrantfile exists
-  //     if (fs.existsSync(vagrantfilePath)) {
-  //       return rootPath; // Return the directory containing the Vagrantfile
-  //     } else {
-  //       vscode.window.showErrorMessage(
-  //         "Vagrantfile not found in the workspace."
-  //       );
-  //       return null;
-  //     }
-  //   } else {
-  //     vscode.window.showErrorMessage("No workspace is open.");
-  //     return null;
-  //   }
-  // }
-
-  function copyFileToVagrantDirectory(localPath: string, remotePath: string) {
-    vscode.window.showInformationMessage("Hello...Im trying to copy now");
-    if (!fs.existsSync(localPath)) {
-      vscode.window.showErrorMessage("Local file does not exist.");
-      return;
-    } else {
-      vscode.window.showInformationMessage("Local file exist.");
-    }
-    const config = {
-      host: "127.0.0.1",
-      port: 2222, // Vagrant SSH default port
-      username: "vagrant",
-      privateKey: require("fs").readFileSync(identityFile), // Path to private key
-    };
-
-    //handling space in local Path
-    localPath = `${localPath}`;
-    console.log(localPath);
-
-    const Client = require("scp2");
-    Client.scp(
-      localPath,
-      {
-        host: config.host,
-        port: config.port,
-        username: config.username,
-        privateKey: config.privateKey,
-        path: remotePath,
-      },
-      (err: any) => {
-        vscode.window.showInformationMessage("SCP Callback reached");
-        if (err) {
-          vscode.window.showErrorMessage(`Failed to copy file: ${err.message}`);
-        } else {
-          vscode.window.showInformationMessage(`File copied to ${remotePath}`);
-        }
-      }
-    );
-  }
-
-  //getting vagrant config
-  // function getVagrantSSHConfig(): Promise<any> {
-  //   return new Promise((resolve, reject) => {
-  //     exec("vagrant ssh-config", (error, stdout, stderr) => {
-  //       if (error) {
-  //         reject(`Error getting Vagrant SSH config: ${stderr}`);
-  //       } else {
-  //         // Parse the SSH config output
-  //         const sshConfig: any = {};
-  //         stdout.split("\n").forEach((line) => {
-  //           const [key, value] = line.trim().split(" ");
-  //           if (key && value) {
-  //             sshConfig[key] = value;
-  //           }
-  //         });
-  //         resolve(sshConfig);
-  //       }
-  //     });
-  //   });
-  // }
-
   const copyCommand = vscode.commands.registerCommand(
     "extension.copyToRemote",
     () => {
       const destinationPath = "/home/vagrant/tests/";
       vscode.window
         .showInputBox({
-          prompt: "Enter the local path to your project",
+          prompt: "Enter the local directory to your project",
         })
         .then((localPath) => {
           if (localPath) {
             const folder = path.basename(localPath);
             const finalpath = path.join(destinationPath, folder, path.sep);
             console.log("final path: " + finalpath);
-            copyFileToVagrantDirectory(localPath, finalpath);
+            copyFileToVagrantDirectory(localPath, finalpath, identityFile);
           }
         });
-      vscode.window.showInformationMessage("Hello...Im trying");
     }
   );
 
