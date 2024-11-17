@@ -24,7 +24,8 @@ const vagrantPath = path.join(
 );
 // const identityFile =
 //   //"C:/Users/m1560/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
-// "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+// // "/Users/KY/.vagrant.d/insecure_private_keys/vagrant.key.rsa";
+
 
 const config = vscode.workspace.getConfiguration("rulekeeper");
 const identityFile: string = config.get("connection.rsaFile") || "";
@@ -295,8 +296,10 @@ export async function activate(context: vscode.ExtensionContext) {
           if (localPath) {
             const folder = path.basename(localPath);
             const finalpath = path.join(destinationPath, folder, path.sep);
+            const normalizedPath = finalpath.replace(/\\/g, "/");
             console.log("final path: " + finalpath);
-            copyFileToVagrantDirectory(localPath, finalpath, identityFile);
+            console.log("normalized path" + normalizedPath);
+            copyFileToVagrantDirectory(localPath, normalizedPath, identityFile);
           }
         });
     }
