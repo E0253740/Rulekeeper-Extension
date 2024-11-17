@@ -115,7 +115,6 @@ export async function activate(context: vscode.ExtensionContext) {
       const number = parseInt(match[1], 10);
       // let phrases = match[2].trim();
       let phrases = match[2].split(/,\s*/);
-      console.log("phrases", phrases);
 
       phrases.forEach((phrase) => {
         {
@@ -124,20 +123,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
           // Convert HTTP method phrase to router method format
           const httpMethodMatch = phrase.match(/(GET|POST|PUT|DELETE) (\/.+)/);
-          console.log("look at me", httpMethodMatch);
+          //console.log("look at me", httpMethodMatch);
           if (httpMethodMatch) {
             const method = httpMethodMatch[1].toLowerCase();
             //const path = httpMethodMatch[2].match(/\/(\w+)'?$/); //this path cannot be identified in windows
             let path = httpMethodMatch[2];
-            console.log('initial path', path);
+            // console.log('initial path', path);
             path = path.replace(/\\/g, '/');
-            console.log("method", method);
-            console.log("normalizedpath", path);
+            // console.log("method", method);
+            // console.log("normalizedpath", path);
             const pathMatch = path.match(/\/([\w-]+)/); // This captures the last part after the slash
             let routerphrase = `router.${method}(`;
             if (pathMatch) {
               let searchPath = pathMatch[1];
-              console.log("searchPath", searchPath);
+              // console.log("searchPath", searchPath);
               searchPhraseInFiles(searchPath, routerphrase, project);
             }
           }
@@ -163,7 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Capture the grep output
     sshProcess.stdout?.on("data", (data) => {
       let output = data.toString();       
-      console.log("output",output);
+      // console.log("output",output);
 
       const lines = output.split('\n');
       lines.forEach((line:any) => {
@@ -171,7 +170,7 @@ export async function activate(context: vscode.ExtensionContext) {
         cleanedLine = cleanedLine
         .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "") // Remove ANSI codes
         .replace(/[^\x20-\x7E]/g, "");    // Remove non-ASCII characters
-        console.log("Processing Line:", cleanedLine);
+        // console.log("Processing Line:", cleanedLine);
 
       //   for (let i = 0; i < cleanedLine.length; i++) {
       //     console.log(`Character: '${cleanedLine[i]}' | Code: ${cleanedLine.charCodeAt(i)}`);
@@ -180,7 +179,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Apply the regex on each line separately
         const matches = cleanedLine.match(/^(.+?):(\d+):(.+)/g);
         if (matches) {
-          console.log("it matches");
+          // console.log("it matches");
           matches.forEach((match: { match: (arg0: RegExp) => any[] }) => {
             const [, filePath, line, text] =
             match.match(/^(.+):(\d+):(.*)$/) || [];
@@ -256,7 +255,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
       createSSHProcess();
 
-      vscode.window.showInformationMessage("Im Waiting");
       const project = await vscode.window.showInputBox({
         prompt: "Enter the project to run rulekeeper",
         placeHolder: "Project Name",
@@ -268,7 +266,7 @@ export async function activate(context: vscode.ExtensionContext) {
         project.trim() !== "" &&
         projectList.indexOf(project) !== -1
       ) {
-        vscode.window.showInformationMessage("hehe");
+        
         runAllCommand(project);
       } else {
         vscode.window.showErrorMessage(
