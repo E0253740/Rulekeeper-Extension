@@ -13,7 +13,6 @@ import { showProject } from "./commands/showProject";
 import { copyFileWindows } from "./commands/copyProject";
 import { visualizeJson } from "./commands/visualize";
 import {copyFileToVagrantDirectory} from "./commands/SSHcopyDirecToVM";
-
 const vagrantPath = path.join(
   __dirname,
   "..",
